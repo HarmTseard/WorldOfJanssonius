@@ -1,0 +1,36 @@
+#+ summary: Get an overview of the number of books printed/published per member of the Johannes Janssonius family
+#+ endpoint: http://data.bibliotheken.nl/sparql 
+
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX schema: <http://schema.org/>
+PREFIX schemas: <https://schema.org/>
+
+SELECT DISTINCT ?relative (SAMPLE(?gender) AS ?sex) ?name (COUNT(DISTINCT ?book) AS ?books) WHERE {
+  
+  # ECARTICO, retrieved from the UB UvA's endpoint
+  SERVICE <https://api.lod.uba.uva.nl/datasets/CREATE/ECARTICO/services/ECARTICO/sparql> {
+    
+    # A person in ECARTICO has relatives (spouse + children + parents) (fourth degree max)
+    ?person a schemas:Person ;
+            (schemas:children|schemas:spouse|schemas:parent)/(schemas:children|schemas:spouse|schemas:parent)?/(schemas:children|schemas:spouse|schemas:parent)?/(schemas:children|schemas:spouse|schemas:parent)? ?relative .
+    
+    # This relative has an entry in the STCN printer thesaurus (join with query below)
+    ?relative a schemas:Person ;
+              schemas:name ?name ;
+              schemas:gender ?gender;
+              schemas:sameAs ?printerPublisher .
+           
+    VALUES ?person { <https://www.vondel.humanities.uva.nl/ecartico/persons/11204> }
+  }
+  
+  # KB
+  # A book in the STCN is published by this printer/publisher
+  ?book a schema:Book ;
+        schema:publication/schema:publishedBy ?printerPublisher .
+  
+  # This printer/publisher is always an organization (helps to speed up the query)
+  ?printerPublisher a schema:Organization .
+  
+} GROUP BY ?relative ?name ORDER BY DESC(?books)
+

@@ -1,0 +1,21 @@
+#+ summary: Get all books printer/published by Johannes Janssonius from the STCN and visualize the number of books per year
+#+ endpoint: http://data.bibliotheken.nl/sparql 
+
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX schema: <http://schema.org/>
+
+SELECT DISTINCT ?date (COUNT(?book) AS ?books) WHERE {
+  ?book a schema:Book ;
+        schema:name ?title ;
+        schema:publication [ schema:startDate ?date ; 
+                             schema:publishedBy ?printerPublisher ] .
+  
+  ?printerPublisher a schema:Organization .
+  
+  FILTER(!CONTAINS(?date, 'X'))
+  
+  VALUES ?printerPublisher { <http://data.bibliotheken.nl/id/thes/p075550105> }
+  
+} GROUP BY ?date ORDER BY ?date 
+
